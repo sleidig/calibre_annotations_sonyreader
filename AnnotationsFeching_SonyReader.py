@@ -181,7 +181,8 @@ class SonyReaderApp(USBReader):
                 note_text = '\n'.join(dict_of_anns[timestamp]['note_text'])
                 ann_mi.note_text = note_text
             if 'location' in dict_of_anns[timestamp]:
-                ann_mi.location = dict_of_anns[timestamp]['location']
+                ann_mi.location = str(int(next(iter(dict_of_anns[timestamp]['location'] or []), None)))
+                ann_mi.location = ('p. '+ann_mi.location) if ann_mi.location != None else ''
 
             # Add annotation to annotations_db
             self.add_to_annotations_db(annotations_db, ann_mi)
@@ -275,10 +276,14 @@ class SonyReaderApp(USBReader):
             # Optional items
             if 'author_sort' in dict_of_books[book_id]:
                 book_mi.author_sort = dict_of_books[book_id]['author_sort']
+            else:
+                book_mi.author_sort = dict_of_books[book_id]['author']
             if 'genre' in dict_of_books[book_id]:
                 book_mi.genre = dict_of_books[book_id]['genre']
             if 'title_sort' in dict_of_books[book_id]:
                 book_mi.title_sort = dict_of_books[book_id]['title_sort']
+            else:
+                book_mi.title_sort = dict_of_books[book_id]['title']
             if 'uuid' in dict_of_books[book_id]:
                 book_mi.uuid = dict_of_books[book_id]['uuid']
 
