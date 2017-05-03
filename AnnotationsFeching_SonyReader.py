@@ -179,7 +179,10 @@ class SonyReaderApp(USBReader):
                 ann_mi.highlight_text = highlight_text
             if 'note_text' in dict_of_anns[timestamp]:
                 note_text = '\n'.join(dict_of_anns[timestamp]['note_text'])
-                ann_mi.note_text = note_text
+                if note_text != ann_mi.highlight_text:
+                    ann_mi.note_text = note_text
+                else:
+                    ann_mi.note_text = ''
             if 'location' in dict_of_anns[timestamp]:
                 ann_mi.location = str(int(next(iter(dict_of_anns[timestamp]['location'] or []), None)))
                 ann_mi.location = ('p. '+ann_mi.location) if ann_mi.location != None else ''
