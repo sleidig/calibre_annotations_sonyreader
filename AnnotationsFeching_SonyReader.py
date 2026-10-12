@@ -41,6 +41,12 @@ class SonyReaderApp(USBReader):
 
 
 
+    @staticmethod
+    def _device_book_id(book_id):
+        # Numeric IDs are treated as calibre library IDs by generate_confidence.
+        # Sony's IDs belong to a separate database; preserve that distinction.
+        return 'sony:%d' % int(book_id)
+
     def _get_db(self):
         self.device = self.opts.gui.device_manager.device
         storage = self.get_storage()
@@ -131,7 +137,7 @@ class SonyReaderApp(USBReader):
             print('adding annotation: ')
             print(row)
             ts = datetime.datetime.fromtimestamp(row[2] / 1e3)
-            dict_of_anns[time.mktime(ts.timetuple())] = {'book_id': row[1],
+            dict_of_anns[time.mktime(ts.timetuple())] = {'book_id': self._device_book_id(row[1]),
                                 'highlight_color': 'Yellow',
                                 'highlight_text': [row[3]],
                                 'note_text': [row[4]],
@@ -161,7 +167,7 @@ class SonyReaderApp(USBReader):
         self.opts.pb.set_maximum(len(dict_of_anns))
 
         # Add annotations to the database
-        for timestamp in sorted(dict_of_anns.iterkeys()):
+        for timestamp in sorted(dict_of_anns):
             # Populate an AnnotationStruct with available data
             ann_mi = AnnotationStruct()
 
@@ -183,9 +189,15 @@ class SonyReaderApp(USBReader):
                     ann_mi.note_text = note_text
                 else:
                     ann_mi.note_text = ''
+            # The Annotations renderer sorts by this TEXT field, not location.
+            ann_mi.location = ''
+            ann_mi.location_sort = ''
             if 'location' in dict_of_anns[timestamp]:
-                ann_mi.location = str(int(next(iter(dict_of_anns[timestamp]['location'] or []), None)))
-                ann_mi.location = ('p. '+ann_mi.location) if ann_mi.location != None else ''
+                page = next(iter(dict_of_anns[timestamp]['location'] or []), None)
+                if page is not None:
+                    page = int(page)
+                    ann_mi.location = 'p. %d' % page
+                    ann_mi.location_sort = '%020d' % page
 
             # Add annotation to annotations_db
             self.add_to_annotations_db(annotations_db, ann_mi)
@@ -241,7 +253,7 @@ class SonyReaderApp(USBReader):
         for row in conn.execute('SELECT _id, author, title FROM books'):
             print('discovered book on device: ')
             print(row)
-            dict_of_books[int(row[0])] = {'author': row[1],
+            dict_of_books[self._device_book_id(row[0])] = {'author': row[1],
                             'title': row[2]}
         conn.close()
 
